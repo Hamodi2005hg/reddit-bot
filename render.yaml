@@ -13,3 +13,5 @@ services:
         sync: false
       - key: REDDIT_PASSWORD
         sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
