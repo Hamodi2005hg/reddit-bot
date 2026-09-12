@@ -58,20 +58,20 @@
             <!-- Session Cookies Uploader (Bypass Cloudflare) -->
             <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold text-white mb-2 flex items-center">
-                    <i class="fa-solid fa-cookie-bite text-amber-500 mr-2.5"></i> Session Cookies (Bypass Cloudflare)
+                    <i class="fa-solid fa-cookie-bite text-amber-500 mr-2.5"></i> Reddit Session Cookie
                 </h2>
                 <p class="text-xs text-slate-400 mb-4">
-                    Export cookies from your browser after logging in locally, then paste the JSON below to authenticate instantly on Render without captcha issues.
+                    Copy the value of your <code>reddit_session</code> cookie from your browser (using Cookie-Editor extension) and paste it below. The bot will use it to log in instantly!
                 </p>
                 
                 <form action="/save_cookies" method="POST" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cookies JSON</label>
-                        <textarea name="cookies_json" rows="6" placeholder='[{"name": "reddit_session", "value": "..."}]' required
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">reddit_session Value (or full JSON)</label>
+                        <textarea name="cookies_json" rows="4" placeholder='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-amber-500 transition"></textarea>
                     </div>
                     <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg transition duration-200 text-sm flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-upload"></i> <span>Upload & Apply Cookies</span>
+                        <i class="fa-solid fa-floppy-disk"></i> <span>Save Session Cookie</span>
                     </button>
                 </form>
             </div>

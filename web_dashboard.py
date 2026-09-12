@@ -59,21 +59,33 @@ def save_account():
 
 @app.route("/save_cookies", methods=["POST"])
 def save_cookies():
-    cookies_json = request.form.get("cookies_json", "").strip()
+    cookies_input = request.form.get("cookies_json", "").strip()
     username, _ = get_accounts_info()
     if not username:
         username = "AppropriateChance699"
         
-    if cookies_json:
+    if cookies_input:
         try:
-            cookies = json.loads(cookies_json)
             session_dir = Path("sessions")
             session_dir.mkdir(parents=True, exist_ok=True)
             session_file = session_dir / f"{username}.cookies"
+            
+            if cookies_input.startswith("["):
+                cookies = json.loads(cookies_input)
+            else:
+                cookies = [
+                    {
+                        "name": "reddit_session",
+                        "value": cookies_input,
+                        "domain": ".reddit.com",
+                        "path": "/"
+                    }
+                ]
+                
             session_file.write_text(json.dumps(cookies, indent=2))
-            log_message(f"[WEB] Successfully saved session cookies for {username}")
+            log_message(f"[WEB] Successfully saved reddit_session cookie for {username}!")
         except Exception as e:
-            log_message(f"[WEB] Error parsing cookies JSON: {e}")
+            log_message(f"[WEB] Error saving cookies: {e}")
             
     return redirect(url_for("index"))
 
