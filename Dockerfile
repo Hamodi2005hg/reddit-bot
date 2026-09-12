@@ -38,4 +38,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Default: run with headless mode
-ENTRYPOINT ["python", "main.py", "--headless"]
+ENTRYPOINT ["python", "start.py", "--headless"]
