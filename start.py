@@ -25,9 +25,9 @@ def run_server():
 
 def run_bot():
     while True:
-        print("Starting Reddit bot runner...")
-        # Check if python arguments were passed or use defaults if env vars exist
-        cmd = [sys.executable, "main.py"]
+        print("Starting Reddit bot runner in verbose mode...")
+        # Use python unbuffered (-u), verbose mode, and default accounts/links files
+        cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt"]
         # If user passed arguments to start.py, pass them along
         if len(sys.argv) > 1:
             cmd.extend(sys.argv[1:])
