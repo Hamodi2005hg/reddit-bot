@@ -128,8 +128,10 @@
                         body: formData
                     });
                     if (response.ok) {
-                        // Reload page to fetch updated screenshot after click
-                        setTimeout(() => location.reload(), 1000);
+                        // Update screenshot smoothly without reloading page
+                        setTimeout(() => {
+                            img.src = '/static/screenshot.png?t=' + new Date().getTime();
+                        }, 1200);
                     }
                 } catch (err) {
                     console.error("Click error", err);

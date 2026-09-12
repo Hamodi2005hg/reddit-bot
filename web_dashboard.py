@@ -205,14 +205,34 @@ def interactive_click():
         x = int(request.form.get("x", 0))
         y = int(request.form.get("y", 0))
         
-        INTERACTIVE_DRIVER.execute_script(f"""
-            var el = document.elementFromPoint({x}, {y});
-            if (el) {{
-                el.click();
-            }}
-        """)
+        # Check if click falls inside any iframe (like Cloudflare reCAPTCHA)
+        iframes = INTERACTIVE_DRIVER.find_elements("tag name", "iframe")
+        clicked = False
+        for iframe in iframes:
+            try:
+                loc = iframe.location
+                size = iframe.size
+                if loc['x'] <= x <= loc['x'] + size['width'] and loc['y'] <= y <= loc['y'] + size['height']:
+                    INTERACTIVE_DRIVER.switch_to.frame(iframe)
+                    local_x = x - loc['x']
+                    local_y = y - loc['y']
+                    INTERACTIVE_DRIVER.execute_script(f"""
+                        var el = document.elementFromPoint({local_x}, {local_y});
+                        if (el) {{ el.click(); el.focus(); }}
+                    """)
+                    clicked = True
+                    INTERACTIVE_DRIVER.switch_to.default_content()
+                    break
+            except Exception:
+                INTERACTIVE_DRIVER.switch_to.default_content()
+                
+        if not clicked:
+            INTERACTIVE_DRIVER.execute_script(f"""
+                var el = document.elementFromPoint({x}, {y});
+                if (el) {{ el.click(); el.focus(); }}
+            """)
         
-        time.sleep(2)
+        time.sleep(1.5)
         INTERACTIVE_DRIVER.save_screenshot("static/screenshot.png")
         log_message(f"[WEB] Clicked interactive browser at ({x}, {y})")
         return jsonify({"status": "success"})
