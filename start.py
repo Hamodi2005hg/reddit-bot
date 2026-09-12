@@ -14,7 +14,7 @@ def background_bot_loop():
     time.sleep(5)
     while True:
         log_message("Starting automated background bot execution cycle...")
-        cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt"]
+        cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt", "--headless", "--session-persistence"]
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             for line in process.stdout:

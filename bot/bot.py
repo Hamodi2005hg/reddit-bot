@@ -307,7 +307,14 @@ class RedditBot:
             return False
 
         self.logger.info(f"Restoring session for {username}")
-        self.dv.get(DefaultLinksEnum.HOME.value)
+        # Load robots.txt first to set cookies without triggering dynamic bot checks on home page
+        try:
+            self.dv.get("https://www.reddit.com/robots.txt")
+        except Exception:
+            try:
+                self.dv.get(DefaultLinksEnum.HOME.value)
+            except Exception:
+                pass
         Timeouts.srt()
 
         import json
@@ -315,14 +322,21 @@ class RedditBot:
             cookies = json.load(f)
 
         for cookie in cookies:
+            if "domain" not in cookie or not cookie["domain"]:
+                cookie["domain"] = ".reddit.com"
             with contextlib.suppress(Exception):
                 self.dv.add_cookie(cookie)
 
-        self.dv.refresh()
+        # Now navigate to the actual Home page with the cookies already sent in the request header!
+        try:
+            self.dv.get(DefaultLinksEnum.HOME.value)
+        except Exception:
+            pass
         Timeouts.med()
 
         # Verify login
-        if "login" not in self.dv.current_url:
+        current_url = self.dv.current_url
+        if "login" not in current_url:
             self._current_account = username
             self.logger.info("Session restored successfully.")
             return True

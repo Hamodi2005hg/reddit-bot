@@ -93,7 +93,7 @@ def run_bot_endpoint():
 
 def execute_bot_subprocess():
     try:
-        cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt"]
+        cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt", "--headless", "--session-persistence"]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         for line in process.stdout:
             log_message(line.strip())
