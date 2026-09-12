@@ -87,44 +87,49 @@ class RedditBot:
         self._init_driver()
 
     def _init_driver(self) -> None:
-        """Initialize Chrome webdriver with all configured options."""
-        self.logger.info("Booting up webdriver")
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument("--log-level=3")
-        chrome_options.add_argument("--lang=en")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option("useAutomationExtension", False)
-        chrome_options.add_experimental_option(
-            "prefs", {"profile.default_content_setting_values.notifications": 2}
-        )
+        """Initialize Chrome webdriver with undetected-chromedriver to bypass Cloudflare/bot detection."""
+        self.logger.info("Booting up undetected webdriver")
+        print(f">>> [REDDIT BOT] Booting up undetected-chromedriver to bypass Cloudflare...", flush=True)
+        
+        import undetected_chromedriver as uc
 
+        options = uc.ChromeOptions()
+        options.add_argument("--lang=en")
+        
         # Headless mode
         if self.config.headless:
-            chrome_options.add_argument("--headless=new")
-            chrome_options.add_argument("--window-size=1920,1080")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--headless=new")
+            options.add_argument("--window-size=1920,1080")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
 
         # User-Agent rotation
         if self.config.rotate_user_agent:
             ua = get_random_user_agent()
-            chrome_options.add_argument(f"--user-agent={ua}")
+            options.add_argument(f"--user-agent={ua}")
             self.logger.info(f"Using user agent: {ua[:60]}...")
 
         # Proxy
         proxy = get_next_proxy() if self.config.proxy.enabled else None
         if proxy:
-            chrome_options.add_argument(proxy.chrome_arg)
+            options.add_argument(proxy.chrome_arg)
             self.logger.info(f"Using proxy: {proxy.address}")
 
-        service = Service(ChromeDriverManager().install())
-        self.dv = webdriver.Chrome(service=service, options=chrome_options)
-
-        # Remove webdriver navigator flag
-        self.dv.execute_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        )
+        try:
+            self.dv = uc.Chrome(options=options, use_subprocess=True, version_main=None)
+            print(f">>> [REDDIT BOT] Undetected Chromedriver booted successfully", flush=True)
+        except Exception as e:
+            print(f">>> [REDDIT BOT] Failed to boot uc.Chrome: {e}, falling back to standard selenium", flush=True)
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument("--log-level=3")
+            chrome_options.add_argument("--lang=en")
+            if self.config.headless:
+                chrome_options.add_argument("--headless=new")
+                chrome_options.add_argument("--window-size=1920,1080")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-dev-shm-usage")
+            service = Service(ChromeDriverManager().install())
+            self.dv = webdriver.Chrome(service=service, options=chrome_options)
 
         self.logger.info("Webdriver booted up")
 
