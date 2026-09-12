@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: reddit-bot
+    env: docker
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USERNAME
+        sync: false
+      - key: REDDIT_PASSWORD
+        sync: false
