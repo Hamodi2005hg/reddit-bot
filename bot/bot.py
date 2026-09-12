@@ -222,9 +222,12 @@ class RedditBot:
     def logout(self) -> None:
         """Clear browser data between accounts."""
         self.logger.info("Clearing browser data")
-        self.dv.delete_all_cookies()
-        self.dv.execute_script("window.localStorage.clear();")
-        self.dv.execute_script("window.sessionStorage.clear();")
+        with contextlib.suppress(Exception):
+            self.dv.delete_all_cookies()
+        with contextlib.suppress(Exception):
+            self.dv.execute_script("window.localStorage.clear();")
+        with contextlib.suppress(Exception):
+            self.dv.execute_script("window.sessionStorage.clear();")
 
     # ─── Action Execution ────────────────────────────────────────
 
