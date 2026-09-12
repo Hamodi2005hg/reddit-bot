@@ -143,22 +143,28 @@ class RedditBot:
         self._current_account = username
 
         self.logger.info(f"Logging in as {username}")
+        print(f">>> [REDDIT BOT] Navigating to login page...", flush=True)
         self.dv.get(DefaultLinksEnum.LOGIN.value)
         Timeouts.med()
 
         # Username field
+        print(f">>> [REDDIT BOT] Looking for username field...", flush=True)
         try:
             # First wait for the username field to be present
             username_field = WebDriverWait(self.dv, 10).until(
                 EC.presence_of_element_located((By.NAME, "username"))
             )
+            print(f">>> [REDDIT BOT] Found username field by name='username'", flush=True)
         except TimeoutException:
+            print(f">>> [REDDIT BOT] Timeout searching by name='username', trying id='loginUsername'...", flush=True)
             try:
                 # If that fails, try looking for loginUsername id
                 username_field = WebDriverWait(self.dv, 10).until(
                     EC.presence_of_element_located((By.ID, "loginUsername"))
                 )
+                print(f">>> [REDDIT BOT] Found username field by id='loginUsername'", flush=True)
             except TimeoutException:
+                print(f">>> [REDDIT BOT] Timeout searching by id, trying iframe...", flush=True)
                 # If that fails, try the iframe approach
                 WebDriverWait(self.dv, 20).until(
                     EC.frame_to_be_available_and_switch_to_it(
@@ -168,42 +174,53 @@ class RedditBot:
                 username_field = WebDriverWait(self.dv, 10).until(
                     EC.presence_of_element_located((By.NAME, "username"))
                 )
+                print(f">>> [REDDIT BOT] Found username field inside iframe", flush=True)
 
+        print(f">>> [REDDIT BOT] Typing username...", flush=True)
         for ch in username:
             username_field.send_keys(ch)
             Timeouts.srt()
         Timeouts.med()
 
         # Password field
+        print(f">>> [REDDIT BOT] Looking for password field...", flush=True)
         try:
             password_field = WebDriverWait(self.dv, 10).until(
                 EC.presence_of_element_located((By.NAME, "password"))
             )
+            print(f">>> [REDDIT BOT] Found password field by name='password'", flush=True)
         except TimeoutException:
             password_field = WebDriverWait(self.dv, 10).until(
                 EC.presence_of_element_located((By.ID, "loginPassword"))
             )
+            print(f">>> [REDDIT BOT] Found password field by id='loginPassword'", flush=True)
 
+        print(f">>> [REDDIT BOT] Typing password...", flush=True)
         for ch in password:
             password_field.send_keys(ch)
             Timeouts.srt()
         Timeouts.med()
 
         # Submit
+        print(f">>> [REDDIT BOT] Submitting login form...", flush=True)
         with contextlib.suppress(Exception):
             password_field.send_keys(Keys.ENTER)
         Timeouts.med()
 
         if "login" in self.dv.current_url:
+            print(f">>> [REDDIT BOT] Login failed, still on login page. Current URL: {self.dv.current_url}", flush=True)
             raise RuntimeError(f"Login failed for user: {username}")
 
+        print(f">>> [REDDIT BOT] Login successful! Handling popups...", flush=True)
         self._popup_handler()
         self._cookies_handler()
 
         # Save session if persistence is enabled
         if self.config.session_persistence:
+            print(f">>> [REDDIT BOT] Saving session...", flush=True)
             self._save_session(username)
 
+        print(f">>> [REDDIT BOT] Login sequence completed.", flush=True)
         self.logger.info("Logged in successfully.")
 
     def login_with_session(self, username: str) -> bool:
