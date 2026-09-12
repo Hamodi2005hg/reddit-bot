@@ -147,34 +147,86 @@ class RedditBot:
         self.dv.get(DefaultLinksEnum.LOGIN.value)
         Timeouts.med()
 
+        def find_element_with_all_fallbacks(selectors, max_wait=20):
+            start = time.time()
+            while time.time() - start < max_wait:
+                # 1. Try in default main frame
+                for by, selector in selectors:
+                    try:
+                        el = self.dv.find_element(by, selector)
+                        if el.is_displayed():
+                            return el, None
+                    except Exception:
+                        continue
+                
+                # 2. Try inside iframes
+                try:
+                    iframes = self.dv.find_elements(By.TAG_NAME, "iframe")
+                    for iframe in iframes:
+                        try:
+                            self.dv.switch_to.frame(iframe)
+                            for by, selector in selectors:
+                                try:
+                                    el = self.dv.find_element(by, selector)
+                                    if el.is_displayed():
+                                        return el, iframe
+                                except Exception:
+                                    continue
+                        except Exception:
+                            pass
+                        finally:
+                            self.dv.switch_to.default_content()
+                except Exception:
+                    pass
+                
+                time.sleep(1)
+            return None, None
+
         # Username field
-        print(f">>> [REDDIT BOT] Looking for username field...", flush=True)
-        try:
-            # First wait for the username field to be present
-            username_field = WebDriverWait(self.dv, 10).until(
-                EC.presence_of_element_located((By.NAME, "username"))
-            )
-            print(f">>> [REDDIT BOT] Found username field by name='username'", flush=True)
-        except TimeoutException:
-            print(f">>> [REDDIT BOT] Timeout searching by name='username', trying id='loginUsername'...", flush=True)
+        username_selectors = [
+            (By.NAME, "username"),
+            (By.ID, "loginUsername"),
+            (By.ID, "login-username"),
+            (By.CSS_SELECTOR, "input[autocomplete='username']"),
+            (By.CSS_SELECTOR, "input[name='username']"),
+            (By.XPATH, "//input[@type='text']"),
+            (By.XPATH, "//input[@type='email']"),
+        ]
+
+        print(f">>> [REDDIT BOT] Searching for username field with advanced fallback search...", flush=True)
+        username_field, u_iframe = find_element_with_all_fallbacks(username_selectors, max_wait=20)
+        
+        if not username_field:
+            print(f">>> [REDDIT BOT] Error: Username field not found anywhere on the page!", flush=True)
+            print(f">>> [REDDIT BOT] Current URL: {self.dv.current_url}", flush=True)
+            print(f">>> [REDDIT BOT] Page Title: {self.dv.title}", flush=True)
             try:
-                # If that fails, try looking for loginUsername id
-                username_field = WebDriverWait(self.dv, 10).until(
-                    EC.presence_of_element_located((By.ID, "loginUsername"))
-                )
-                print(f">>> [REDDIT BOT] Found username field by id='loginUsername'", flush=True)
-            except TimeoutException:
-                print(f">>> [REDDIT BOT] Timeout searching by id, trying iframe...", flush=True)
-                # If that fails, try the iframe approach
-                WebDriverWait(self.dv, 20).until(
-                    EC.frame_to_be_available_and_switch_to_it(
-                        (By.CSS_SELECTOR, "iframe[src*='login']")
-                    )
-                )
-                username_field = WebDriverWait(self.dv, 10).until(
-                    EC.presence_of_element_located((By.NAME, "username"))
-                )
-                print(f">>> [REDDIT BOT] Found username field inside iframe", flush=True)
+                inputs = self.dv.execute_script("""
+                    var elms = document.getElementsByTagName('input');
+                    var res = [];
+                    for(var i=0; i<elms.length; i++) {
+                        res.push({
+                            id: elms[i].id,
+                            name: elms[i].name,
+                            type: elms[i].type,
+                            placeholder: elms[i].placeholder,
+                            className: elms[i].className
+                        });
+                    }
+                    return JSON.stringify(res);
+                """)
+                print(f">>> [REDDIT BOT] Main page inputs: {inputs}", flush=True)
+            except Exception as js_err:
+                print(f">>> [REDDIT BOT] Could not extract inputs: {js_err}", flush=True)
+            raise RuntimeError("Username field not found on page.")
+
+        # Switch to correct frame
+        if u_iframe:
+            print(f">>> [REDDIT BOT] Username field is in an iframe, switching to it...", flush=True)
+            self.dv.switch_to.frame(u_iframe)
+        else:
+            print(f">>> [REDDIT BOT] Username field is on the main page.", flush=True)
+            self.dv.switch_to.default_content()
 
         print(f">>> [REDDIT BOT] Typing username...", flush=True)
         for ch in username:
@@ -182,18 +234,32 @@ class RedditBot:
             Timeouts.srt()
         Timeouts.med()
 
-        # Password field
-        print(f">>> [REDDIT BOT] Looking for password field...", flush=True)
-        try:
-            password_field = WebDriverWait(self.dv, 10).until(
-                EC.presence_of_element_located((By.NAME, "password"))
-            )
-            print(f">>> [REDDIT BOT] Found password field by name='password'", flush=True)
-        except TimeoutException:
-            password_field = WebDriverWait(self.dv, 10).until(
-                EC.presence_of_element_located((By.ID, "loginPassword"))
-            )
-            print(f">>> [REDDIT BOT] Found password field by id='loginPassword'", flush=True)
+        # Switch back to default content to search for password field (just in case)
+        self.dv.switch_to.default_content()
+
+        # Search for password field
+        password_selectors = [
+            (By.NAME, "password"),
+            (By.ID, "loginPassword"),
+            (By.ID, "login-password"),
+            (By.CSS_SELECTOR, "input[type='password']"),
+            (By.CSS_SELECTOR, "input[name='password']"),
+            (By.XPATH, "//input[@type='password']"),
+        ]
+
+        print(f">>> [REDDIT BOT] Searching for password field with advanced fallback search...", flush=True)
+        password_field, p_iframe = find_element_with_all_fallbacks(password_selectors, max_wait=15)
+
+        if not password_field:
+            print(f">>> [REDDIT BOT] Error: Password field not found anywhere on the page!", flush=True)
+            raise RuntimeError("Password field not found on page.")
+
+        if p_iframe:
+            print(f">>> [REDDIT BOT] Password field is in an iframe, switching to it...", flush=True)
+            self.dv.switch_to.frame(p_iframe)
+        else:
+            print(f">>> [REDDIT BOT] Password field is on the main page.", flush=True)
+            self.dv.switch_to.default_content()
 
         print(f">>> [REDDIT BOT] Typing password...", flush=True)
         for ch in password:
@@ -206,6 +272,9 @@ class RedditBot:
         with contextlib.suppress(Exception):
             password_field.send_keys(Keys.ENTER)
         Timeouts.med()
+
+        # Always switch back to default content after typing/submitting
+        self.dv.switch_to.default_content()
 
         if "login" in self.dv.current_url:
             print(f">>> [REDDIT BOT] Login failed, still on login page. Current URL: {self.dv.current_url}", flush=True)
