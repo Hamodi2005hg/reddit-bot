@@ -17,7 +17,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 from .config import BotConfig
@@ -148,14 +148,26 @@ class RedditBot:
 
         # Username field
         try:
-            username_field = self.dv.find_element(By.NAME, "username")
-        except NoSuchElementException:
-            WebDriverWait(self.dv, 20).until(
-                EC.frame_to_be_available_and_switch_to_it(
-                    (By.CSS_SELECTOR, "iframe[src*='login']")
-                )
+            # First wait for the username field to be present
+            username_field = WebDriverWait(self.dv, 10).until(
+                EC.presence_of_element_located((By.NAME, "username"))
             )
-            username_field = self.dv.find_element(By.NAME, "username")
+        except TimeoutException:
+            try:
+                # If that fails, try looking for loginUsername id
+                username_field = WebDriverWait(self.dv, 10).until(
+                    EC.presence_of_element_located((By.ID, "loginUsername"))
+                )
+            except TimeoutException:
+                # If that fails, try the iframe approach
+                WebDriverWait(self.dv, 20).until(
+                    EC.frame_to_be_available_and_switch_to_it(
+                        (By.CSS_SELECTOR, "iframe[src*='login']")
+                    )
+                )
+                username_field = WebDriverWait(self.dv, 10).until(
+                    EC.presence_of_element_located((By.NAME, "username"))
+                )
 
         for ch in username:
             username_field.send_keys(ch)
@@ -163,7 +175,15 @@ class RedditBot:
         Timeouts.med()
 
         # Password field
-        password_field = self.dv.find_element(By.NAME, "password")
+        try:
+            password_field = WebDriverWait(self.dv, 10).until(
+                EC.presence_of_element_located((By.NAME, "password"))
+            )
+        except TimeoutException:
+            password_field = WebDriverWait(self.dv, 10).until(
+                EC.presence_of_element_located((By.ID, "loginPassword"))
+            )
+
         for ch in password:
             password_field.send_keys(ch)
             Timeouts.srt()
