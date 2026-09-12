@@ -195,6 +195,31 @@ def interactive_action():
         
     return redirect(url_for("interactive_login_page"))
 
+@app.route("/interactive_click", methods=["POST"])
+def interactive_click():
+    global INTERACTIVE_DRIVER
+    if not INTERACTIVE_DRIVER:
+        return jsonify({"status": "error", "message": "No active driver"})
+        
+    try:
+        x = int(request.form.get("x", 0))
+        y = int(request.form.get("y", 0))
+        
+        INTERACTIVE_DRIVER.execute_script(f"""
+            var el = document.elementFromPoint({x}, {y});
+            if (el) {{
+                el.click();
+            }}
+        """)
+        
+        time.sleep(2)
+        INTERACTIVE_DRIVER.save_screenshot("static/screenshot.png")
+        log_message(f"[WEB] Clicked interactive browser at ({x}, {y})")
+        return jsonify({"status": "success"})
+    except Exception as e:
+        log_message(f"[WEB] Error in interactive click: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route("/interactive_save_cookies", methods=["POST"])
 def interactive_save_cookies():
     global INTERACTIVE_DRIVER

@@ -83,14 +83,59 @@
                 </span>
                 <span class="text-xs text-slate-400">Current URL: <code class="text-orange-400">{{ current_url }}</code></span>
             </div>
-            <div class="w-full bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-2">
+            <div class="w-full bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-2 relative">
                 {% if screenshot_exists %}
-                <img src="/static/screenshot.png?t={{ timestamp }}" alt="Browser Screenshot" class="w-full h-auto rounded border border-slate-800 shadow">
+                <img id="browser-img" src="/static/screenshot.png?t={{ timestamp }}" alt="Browser Screenshot" class="w-full h-auto rounded border border-slate-800 shadow cursor-crosshair">
+                <div id="click-indicator" class="absolute bg-orange-500 w-3 h-3 rounded-full pointer-events-none transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity"></div>
                 {% else %}
                 <div class="py-20 text-center text-slate-500 text-xs">No active screenshot available. Click Refresh.</div>
                 {% endif %}
             </div>
         </div>
     </main>
+
+    <script>
+        const img = document.getElementById('browser-img');
+        if (img) {
+            img.addEventListener('click', async function(e) {
+                const rect = img.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // Scale click coordinates to actual browser viewport (1280x800)
+                const scaleX = 1280 / img.clientWidth;
+                const scaleY = 800 / img.clientHeight;
+                
+                const realX = Math.round(clickX * scaleX);
+                const realY = Math.round(clickY * scaleY);
+
+                // Show visual click feedback indicator
+                const indicator = document.getElementById('click-indicator');
+                if (indicator) {
+                    indicator.style.left = clickX + 'px';
+                    indicator.style.top = clickY + 'px';
+                    indicator.style.opacity = '1';
+                    setTimeout(() => indicator.style.opacity = '0', 800);
+                }
+
+                const formData = new FormData();
+                formData.append('x', realX);
+                formData.append('y', realY);
+
+                try {
+                    const response = await fetch('/interactive_click', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (response.ok) {
+                        // Reload page to fetch updated screenshot after click
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                } catch (err) {
+                    console.error("Click error", err);
+                }
+            });
+        }
+    </script>
 </body>
 </html>
