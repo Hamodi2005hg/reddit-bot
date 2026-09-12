@@ -1,50 +1,36 @@
+"""Start script for Render/Railway running Flask Web Control Panel and background bot."""
+
 import os
 import sys
 import threading
-import http.server
-import socketserver
-import subprocess
 import time
+import subprocess
+from web_dashboard import run_web_dashboard, log_message
 
 PORT = int(os.environ.get("PORT", 3000))
 
-class HealthHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(b"Reddit Bot is running and healthy!")
-
-def run_server():
-    try:
-        with socketserver.TCPServer(("0.0.0.0", PORT), HealthHandler) as httpd:
-            print(f"Health check server running on port {PORT}")
-            httpd.serve_forever()
-    except Exception as e:
-        print(f"Health check server error: {e}")
-
-def run_bot():
+def background_bot_loop():
+    # Wait a few seconds for web server to boot up
+    time.sleep(5)
     while True:
-        print("Starting Reddit bot runner in verbose mode...")
-        # Use python unbuffered (-u), verbose mode, and default accounts/links files
+        log_message("Starting automated background bot execution cycle...")
         cmd = [sys.executable, "-u", "main.py", "--verbose", "-a", "accounts.txt", "-l", "links.txt"]
-        # If user passed arguments to start.py, pass them along
-        if len(sys.argv) > 1:
-            cmd.extend(sys.argv[1:])
-        
-        result = subprocess.run(cmd)
-        if result.returncode == 0:
-            print("Reddit bot execution completed successfully.")
-            # Sleep 1 hour before re-running if it completed successfully
-            time.sleep(3600)
-        else:
-            print(f"Reddit bot exited with code {result.returncode}. Retrying in 60 seconds...")
-            time.sleep(60)
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in process.stdout:
+                log_message(line.strip())
+            process.wait()
+            log_message(f"Bot cycle completed with exit code {process.returncode}. Sleeping for 1 hour...")
+        except Exception as e:
+            log_message(f"Error in background bot loop: {e}")
+        time.sleep(3600)
 
 if __name__ == "__main__":
-    # Start health check server in background thread
-    server_thread = threading.Thread(target=run_server, daemon=True)
-    server_thread.start()
+    log_message("Initializing Reddit Bot Cloud Service...")
+    
+    # Start background bot thread
+    bot_thread = threading.Thread(target=background_bot_loop, daemon=True)
+    bot_thread.start()
 
-    # Run bot loop
-    run_bot()
+    # Run Flask Web Dashboard on main thread (port 3000)
+    run_web_dashboard(port=PORT)
