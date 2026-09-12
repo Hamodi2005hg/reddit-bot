@@ -90,6 +90,11 @@
                     <p class="text-xs text-slate-400 mt-0.5">Trigger a manual run immediately or check status.</p>
                 </div>
                 <div class="flex items-center space-x-3">
+                    <form action="/start_interactive_login" method="POST">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-5 rounded-xl shadow-lg transition duration-200 text-sm flex items-center space-x-2">
+                            <i class="fa-solid fa-desktop"></i> <span>Cloud Browser Login</span>
+                        </button>
+                    </form>
                     <form action="/run_bot" method="POST">
                         <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 px-6 rounded-xl shadow-lg transition duration-200 text-sm flex items-center space-x-2">
                             <i class="fa-solid fa-play"></i> <span>Run Bot Now</span>
